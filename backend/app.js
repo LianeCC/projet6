@@ -1,20 +1,15 @@
-// config principale de l'app, importation routes et middlewares 
 
-const express = require("express");
+// config principale de l'app, importation routes et middlewares 
+const express = require('express');
 const mongoose = require("mongoose");
 const Book = require("./models/book");
 
 const app = express();
 
 // Connexion à MongoDB
-mongoose.connect(
-  "mongodb+srv://lianecoupat:eJjguhRAGmyU9Gi5@clusterlcc.7hndt.mongodb.net/mydatabase?retryWrites=true&w=majority",
-  { }
-)
-  .then(() => console.log("Connexion à MongoDB réussie !"))
-  .catch(err => console.error("Connexion à MongoDB échouée :", err));
-
-
+  mongoose.connect("mongodb+srv://Paupiette13:13BluePaupiette@clusterlcc.7hndt.mongodb.net/mydatabase?retryWrites=true&w=majority")
+    .then(() => console.log('Connexion à MongoDB réussie !'))
+    .catch(() => console.log('Connexion à MongoDB échouée !'));
 
 // Middleware CORS
 app.use((req, res, next) => {
@@ -24,18 +19,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// route GET à la page d'accueil
-app.get("/", (req, res) => {
-  Book.find()
-  .then(books =>res.status(200).json(books))
-  .catch(error => res.status (400).json ({ error }))
-});
-
 // Middleware JSON
 app.use(express.json());
 
 // route POST
-app.post("/data", (req, res, next) => {
+app.post("/api/books", (req, res, next) => {
   delete req.body._id;
   const book = new Book({
     ...req.body
@@ -43,6 +31,20 @@ app.post("/data", (req, res, next) => {
   book.save()
     .then(() => res.status(201).json({ message: "Livre enregistré !"}))
     .catch(error => res.status(400).json({ error }));
+});
+
+// route get pour 1 seul livre
+app.get("/api/books/:id", (req, res, next) => {
+  Book.findOne({ _id: req.params.id })
+  .then(book => res.status(200).json(book))
+  .catch(error => res.status(404).json({ error }));
+});
+
+// route GET à la page d'accueil
+app.get("/api/books", (req, res,next) => {
+  Book.find()
+  .then(books =>res.status(200).json(books))
+  .catch(error => res.status (400).json ({ error }))
 });
 
 
