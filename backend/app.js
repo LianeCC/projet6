@@ -33,6 +33,21 @@ app.post("/api/books", (req, res, next) => {
     .catch(error => res.status(400).json({ error }));
 });
 
+//route modification d'un livre 
+app.put("/api/books/:id", (req, res, next) => {
+  Book.updateOne({ _id: req.params.id }, { ...req.body, _id:req.params.id})
+  .then(() => res.status(200).json({message: "Livre modifié !"}))
+  .catch(error => res.status(400).json({error}));
+});
+
+// route suppression d'un livre 
+app.delete('/api/books/:id', (req, res, next) => {
+  Book.deleteOne({ _id: req.params.id })
+    .then(() => res.status(200).json({ message: 'Livre supprimé !'}))
+    .catch(error => res.status(400).json({ error }));
+});
+
+
 // route get pour 1 seul livre
 app.get("/api/books/:id", (req, res, next) => {
   Book.findOne({ _id: req.params.id })
