@@ -1,7 +1,9 @@
 // config principale de l'app, importation routes et middlewares 
 const express = require('express');
 const mongoose = require("mongoose");
+
 const booksRoutes = require("./routes/books"); 
+const userRoutes = require("./routes/user");
 
 // Connexion à MongoDB
 mongoose.connect("mongodb+srv://Paupiette13:13BluePaupiette@clusterlcc.7hndt.mongodb.net/mydatabase?retryWrites=true&w=majority")
@@ -23,5 +25,6 @@ app.use(express.json());
 
 // Définir les routes
 app.use("/api/books", booksRoutes); 
+app.use("/api/auth", userRoutes);
 
 module.exports = app;
