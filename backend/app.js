@@ -1,4 +1,5 @@
 // config principale de l'app, importation routes et middlewares 
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require("mongoose");
 const path = require('path');
@@ -6,7 +7,7 @@ const booksRoutes = require("./routes/books");
 const userRoutes = require("./routes/user");
 
 // Connexion à MongoDB
-mongoose.connect("mongodb+srv://Paupiette13:13BluePaupiette@clusterlcc.7hndt.mongodb.net/mydatabase?retryWrites=true&w=majority")
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));
 
