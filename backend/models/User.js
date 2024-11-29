@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema({
       message: "Email déjà utilisé !",
     },
   },
+  password: {
+    type: String,
+    required: true, 
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

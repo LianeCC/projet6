@@ -7,15 +7,19 @@ const User = require("../models/User");
 exports.signUp = (req, res, next) => {
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
-            const user = new User ({
+            const user = new User({
                 email: req.body.email,
-                password: hash
+                password: hash, 
             });
             user.save()
-                .then(() => res.status(201).json({message: "Utilisateur créé" }))
-                .catch(error => res.status(400).json({ error }));
+                .then(() => res.status(201).json({ message: "Utilisateur créé" }))
+                .catch(error => {
+                    res.status(400).json({ error });
+                });
         })
-        .catch(error => res.status(500).json({ error }));
+        .catch(error => {
+            res.status(500).json({ error });
+        });
 };
 
 // verifie paire user/mdp 
