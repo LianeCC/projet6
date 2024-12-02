@@ -2,7 +2,7 @@ const Book = require("../models/Book")
 const fs = require("fs");
 
 exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.thing);
+  const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
   const book = new Book({
@@ -10,9 +10,9 @@ exports.createBook = (req, res, next) => {
     userId: req.auth.userId,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
-book.save()
-.then(() => { res.status(201).json({message: "Livre enregistré"}) })
-.catch(error => { res.status(400).json({ error }) })
+  book.save()
+  .then(() => { res.status(201).json({message: "Livre enregistré"}) })
+  .catch(error => { res.status(400).json({ error }) })
 };
 
 exports.getBook = (req, res, next) => {
@@ -65,4 +65,38 @@ exports.getBooks = (req, res, next) => {
     Book.find()
       .then(books => res.status(200).json(books))
       .catch(error => res.status(400).json({ error }));
+};
+
+exports.addRating = (req, res, next) => {
+  const { userId, rating } = req.body; // ID utilisateur et note
+
+  if (!userId || rating == null || typeof rating !== 'number') {
+    return res.status(400).json({ message: 'Données manquantes ou incorrectes.' });
+  }
+
+  if (rating < 0 || rating > 5) {
+    return res.status(400).json({ message: 'La note doit être comprise entre 0 et 5.' });
+  }
+
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (!book) {
+        return res.status(404).json({ message: 'Livre introuvable.' });
+      }
+
+      const existingRating = book.ratings.find((r) => r.userId === userId);
+      if (existingRating) {
+        return res.status(400).json({ message: 'Vous avez déjà noté ce livre.' });
+      }
+
+      book.ratings.push({ userId, grade: rating });
+
+      const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
+      book.averageRating = totalRatings / book.ratings.length;
+
+      book.save()
+        .then(() => res.status(200).json(book))
+        .catch((error) => res.status(500).json({ error }));
+    })
+    .catch((error) => res.status(500).json({ error }));
 };
