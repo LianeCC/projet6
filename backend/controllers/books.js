@@ -70,25 +70,8 @@ exports.getBooks = (req, res, next) => {
 exports.addRating = (req, res, next) => {
   const { userId, rating } = req.body; // ID utilisateur et note
 
-  if (!userId || rating == null || typeof rating !== 'number') {
-    return res.status(400).json({ message: 'Données manquantes ou incorrectes.' });
-  }
-
-  if (rating < 0 || rating > 5) {
-    return res.status(400).json({ message: 'La note doit être comprise entre 0 et 5.' });
-  }
-
   Book.findOne({ _id: req.params.id })
     .then((book) => {
-      if (!book) {
-        return res.status(404).json({ message: 'Livre introuvable.' });
-      }
-
-      const existingRating = book.ratings.find((r) => r.userId === userId);
-      if (existingRating) {
-        return res.status(400).json({ message: 'Vous avez déjà noté ce livre.' });
-      }
-
       book.ratings.push({ userId, grade: rating });
 
       const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
