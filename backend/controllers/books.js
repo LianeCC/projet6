@@ -54,7 +54,6 @@ exports.getBook = (req, res, next) => {
 };
 
 
-
 exports.updateBook = (req, res, next) => {
 
   const bookObject = req.file ? {
@@ -106,8 +105,6 @@ exports.updateBook = (req, res, next) => {
   };
   
 
-
-
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id})
     .then(book => { 
@@ -146,3 +143,15 @@ exports.addRating = (req, res, next) => {
     })
     .catch((error) => res.status(500).json({ error }));
 };
+
+exports.getRatings = (req, res, next) => {
+  Book.find()
+  .sort({ averageRating: -1 }) // tri decroissant 
+  .limit(3)
+  .then((books) => {
+    res.status(200).json(books);
+  })
+  .catch((error) => {
+    res.status(500).json({ error });
+  });
+}
