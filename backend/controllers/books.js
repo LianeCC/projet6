@@ -7,8 +7,13 @@ const processImage = (file) => {
     const outputFilename = `${file.filename.split('.')[0]}.webp`;
 
     sharp(file.path)
-      .toFormat("webp")
+      .resize(800, 800, { // taille max
+        fit: sharp.fit.inside,
+        withoutEnlargement: true
+      })
+      .webp({ quality: 80 }) // ajuste qualité du webp
       .toFile(`images/${outputFilename}`)
+
       .then(() => {
         // Supprime l'image originale après conversion
         fs.unlink(file.path, (err) => {
@@ -131,8 +136,6 @@ exports.getBooks = (req, res, next) => {
 
 exports.addRating = (req, res, next) => {
   const { userId, rating } = req.body; // ID utilisateur et note
-
-  
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       const existingRating = book.ratings.find((r) => r.userId === userId); // cherche dans le tableau si userId d'une note et userId de la req sont = 
