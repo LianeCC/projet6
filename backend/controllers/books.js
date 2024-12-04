@@ -132,17 +132,25 @@ exports.getBooks = (req, res, next) => {
 exports.addRating = (req, res, next) => {
   const { userId, rating } = req.body; // ID utilisateur et note
 
+  
   Book.findOne({ _id: req.params.id })
     .then((book) => {
+      const existingRating = book.ratings.find((r) => r.userId === userId); // cherche dans le tableau si userId d'une note et userId de la req sont = 
+      if (existingRating) {
+        return res.status(400).json({ error: "Vous avez déjà noté ce livre." });
+      }
       book.ratings.push({ userId, grade: rating });
+
       const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
       book.averageRating = totalRatings / book.ratings.length;
+      
       book.save()
         .then(() => res.status(200).json(book))
         .catch((error) => res.status(500).json({ error }));
     })
     .catch((error) => res.status(500).json({ error }));
 };
+
 
 exports.getRatings = (req, res, next) => {
   Book.find()
