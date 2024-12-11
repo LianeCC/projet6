@@ -24,7 +24,10 @@ exports.signUp = (req, res, next) => {
 
 
 /// simule délai de 2s 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (min, max) => {
+    const randomMs = Math.random() * (max - min) + min;
+    return new Promise(resolve => setTimeout(resolve, randomMs));
+};
 
 exports.login = (req, res, next) => {
     console.log("email reçu : ", req.body.email);
@@ -36,7 +39,7 @@ exports.login = (req, res, next) => {
                 console.log("Utilisateur introuvable.");
 
                 // Applique un délai de 2 secondes avant de renvoyer l'erreur
-                delay(2000)
+                delay(1500, 2000)
                     .then(() => {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
                     })
@@ -53,7 +56,7 @@ exports.login = (req, res, next) => {
                         console.log("Mot de passe incorrect.");
 
                         // délai de sécurité si mdp incorrect
-                        delay(2000)
+                        delay(1500, 2000)
                             .then(() => {
                                 return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
                             })

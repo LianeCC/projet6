@@ -22,7 +22,7 @@ const processImage = (file) => {
       .then(() => {
         console.log("Conversion en WebP réussie:", outputFilePath);
 
-        // Retentez plusieurs fois la suppression
+        // Retenter plusieurs fois la suppression
         const retryDelete = (filePath, attempts = 5) => {
           if (attempts === 0) {
             console.error("Impossible de supprimer le fichier après plusieurs tentatives :", filePath);
@@ -39,7 +39,6 @@ const processImage = (file) => {
             }
           });
         };
-
         retryDelete(file.path);
       })
       .catch((error) => {
