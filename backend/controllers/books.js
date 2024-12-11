@@ -6,34 +6,44 @@ const sharp = require("sharp");
 // Fonction gestion des images avec méthode Sharp
 const processImage = (file) => {
   return new Promise((resolve, reject) => {
-    const outputFilename = `${file.filename.split('.')[0]}.webp`;
+    const filenameBase = file.filename.split('.')[0];
+    const outputFilename = `${filenameBase}.webp`;
     const outputFilePath = path.join("images", outputFilename);
 
-    console.log("Fichier reçu pour traitement:", file.path);
+    console.log("Fichier original reçu:", file.path);
 
     sharp(file.path)
-      .resize(800, 800, { // taille max
+      .resize(800, 800, { 
         fit: sharp.fit.inside,
-        withoutEnlargement: true
+        withoutEnlargement: true,
       })
-      .webp({ quality: 80 }) // ajuste qualité du webp
-      .toFile(outputFilePath) // chemin complet
+      .webp({ quality: 80 })
+      .toFile(outputFilePath)
       .then(() => {
-        console.log("Image convertie et enregistrée:", outputFilePath);
+        console.log("Conversion en WebP réussie:", outputFilePath);
 
-        // Supprime l'image originale après conversion
-        fs.unlink(file.path, (err) => {
-          if (err) {
-            console.error("Erreur lors de la suppression de l'image originale:", err);
-            reject(err);
-          } else {
-            console.log("Image originale supprimée:", file.path);
-            resolve(outputFilename);
+        // Retentez plusieurs fois la suppression
+        const retryDelete = (filePath, attempts = 5) => {
+          if (attempts === 0) {
+            console.error("Impossible de supprimer le fichier après plusieurs tentatives :", filePath);
+            return resolve(outputFilename);
           }
-        });
+
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.warn(`Échec de suppression (${attempts} restantes):`, err);
+              setTimeout(() => retryDelete(filePath, attempts - 1), 200); // Attente avant la nouvelle tentative
+            } else {
+              console.log("Fichier original supprimé:", filePath);
+              resolve(outputFilename);
+            }
+          });
+        };
+
+        retryDelete(file.path);
       })
       .catch((error) => {
-        console.error("Erreur lors du traitement Sharp:", error);
+        console.error("Erreur lors du traitement de Sharp:", error);
         reject(error);
       });
   });
@@ -103,19 +113,27 @@ exports.updateBook = (req, res, next) => {
         if (req.file) {  //cas si nouvelle image fournie
           processImage(req.file)
             .then((filename) => { // et on supprime l'ancienne image si elle existe
-              if (book.imageUrl) {
-                const oldFilename = book.imageUrl.split("/images/")[1];
-                fs.unlink(`images/${oldFilename}`, () => {});
-              }
-  
-              Book.updateOne( // données remplacées par celles de bookObject
-                { _id: req.params.id },
-                {
-                  ...bookObject,
-                  imageUrl: `${req.protocol}://${req.get('host')}/images/${filename}`,
-                  _id: req.params.id,
+              const newImageUrl = `${req.protocol}://${req.get("host")}/images/${filename}`;
+
+            // Supprimer l'ancienne image uniquement si elle existe
+            if (book.imageUrl) {
+              const oldFilename = book.imageUrl.split("/images/")[1];
+              fs.unlink(`images/${oldFilename}`, (err) => {
+                if (err) {
+                  console.error("Erreur lors de la suppression de l'ancienne image :", err);
+                } else {
+                  console.log("Ancienne image supprimée :", oldFilename);
                 }
-              )
+              });
+            }
+
+            // Mettre à jour les données du livre
+            return Book.updateOne( // données remplacées par celles de bookObject
+              { _id: req.params.id },
+              { ...bookObject, 
+                imageUrl: newImageUrl, 
+                _id: req.params.id }
+            )
                 .then(() => res.status(200).json({ message: "Livre modifié !" }))
                 .catch((error) => res.status(401).json({ error }));
             })
