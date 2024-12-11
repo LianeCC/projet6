@@ -1,10 +1,15 @@
-const Book = require("../models/Book")
+const Book = require("../models/Book");
 const fs = require("fs");
+const path = require("path");
+const sharp = require("sharp");
 
-// fonction gestion des images avec methode Sharp
+// Fonction gestion des images avec méthode Sharp
 const processImage = (file) => {
   return new Promise((resolve, reject) => {
     const outputFilename = `${file.filename.split('.')[0]}.webp`;
+    const outputFilePath = path.join("images", outputFilename);
+
+    console.log("Fichier reçu pour traitement:", file.path);
 
     sharp(file.path)
       .resize(800, 800, { // taille max
@@ -12,42 +17,64 @@ const processImage = (file) => {
         withoutEnlargement: true
       })
       .webp({ quality: 80 }) // ajuste qualité du webp
-      .toFile(`images/${outputFilename}`)
-
+      .toFile(outputFilePath) // chemin complet
       .then(() => {
+        console.log("Image convertie et enregistrée:", outputFilePath);
+
         // Supprime l'image originale après conversion
         fs.unlink(file.path, (err) => {
-          if (err) reject(err);
-          else resolve(outputFilename);
+          if (err) {
+            console.error("Erreur lors de la suppression de l'image originale:", err);
+            reject(err);
+          } else {
+            console.log("Image originale supprimée:", file.path);
+            resolve(outputFilename);
+          }
         });
       })
-      .catch((error) => reject(error));
+      .catch((error) => {
+        console.error("Erreur lors du traitement Sharp:", error);
+        reject(error);
+      });
   });
 };
 
 exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
-  delete bookObject._id;
-  delete bookObject._userId;
+  try {
+    const bookObject = JSON.parse(req.body.book);
+    delete bookObject._id;
+    delete bookObject._userId;
 
-  if (req.file) {
-    processImage(req.file)
-      .then((filename) => {
-        const book = new Book({
-          ...bookObject,
-          userId: req.auth.userId,
-          imageUrl: `${req.protocol}://${req.get('host')}/images/${filename}`,
+    if (req.file) {
+      processImage(req.file)
+        .then((filename) => {
+          const book = new Book({
+            ...bookObject,
+            userId: req.auth.userId,
+            imageUrl: `${req.protocol}://${req.get("host")}/images/${filename}`,
+          });
+
+          book.save()
+            .then(() => {
+              console.log("Livre enregistré avec succès !");
+              res.status(201).json({ message: "Livre enregistré !" });
+            })
+            .catch((error) => {
+              console.error("Erreur lors de l'enregistrement du livre:", error);
+              res.status(400).json({ error });
+            });
+        })
+        .catch((error) => {
+          console.error("Erreur lors du traitement de l'image:", error);
+          res.status(500).json({ error: "Erreur lors du traitement de l'image" });
         });
-
-        book.save()
-          .then(() => res.status(201).json({ message: "Livre enregistré !" }))
-          .catch((error) => res.status(400).json({ error }));
-      })
-      .catch((error) =>
-        res.status(500).json({ error: "Erreur lors du traitement de l'image" })
-      );
-  } else {
-    res.status(400).json({ error: "Aucune image fournie !" });
+    } else {
+      console.error("Aucune image fournie !");
+      res.status(400).json({ error: "Aucune image fournie !" });
+    }
+  } catch (error) {
+    console.error("Erreur générale dans createBook:", error);
+    res.status(500).json({ error: "Une erreur s'est produite." });
   }
 };
 
@@ -140,7 +167,7 @@ exports.addRating = (req, res, next) => {
     .then((book) => {
       const existingRating = book.ratings.find((r) => r.userId === userId); // cherche dans le tableau si userId d'une note et userId de la req sont = 
       if (existingRating) {
-        return res.status(400).json({ error: "Vous avez déjà noté ce livre." });
+        return res.status(409).json({ error: "Vous avez déjà noté ce livre." });
       }
       book.ratings.push({ userId, grade: rating });
 
