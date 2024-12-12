@@ -7,7 +7,7 @@ const User = require("../models/User");
 // Charger les variables d'environnement
 dotenv.config();
 
-/// simule délai de 2s 
+/// simule délai de réponse  
 const delay = (min, max) => {
     const randomMs = Math.random() * (max - min) + min;
     return new Promise(resolve => setTimeout(resolve, randomMs));
@@ -42,8 +42,6 @@ exports.login = (req, res, next) => {
         .then(user => {
             if (!user) {
                 console.log("Utilisateur introuvable.");
-
-                // Applique un délai avant de renvoyer l'erreur
                 delay(1500, 2000)
                     .then(() => {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
@@ -59,8 +57,6 @@ exports.login = (req, res, next) => {
                 .then(valid => {
                     if (!valid) {
                         console.log("Mot de passe incorrect.");
-
-                        // délai de sécurité si mdp incorrect
                         delay(1500, 2000)
                             .then(() => {
                                 return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });

@@ -1,4 +1,3 @@
-
 // point d'entrée du projet démarrant le serveur //
 const http = require('http');
 const app = require('./app');
