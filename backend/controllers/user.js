@@ -1,7 +1,18 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
 
 const User = require("../models/User");
+
+// Charger les variables d'environnement
+dotenv.config();
+
+/// simule délai de 2s 
+const delay = (min, max) => {
+    const randomMs = Math.random() * (max - min) + min;
+    return new Promise(resolve => setTimeout(resolve, randomMs));
+};
+
 
 //crypte le mdp avec hash et crée un nv user avec ces infos -> enregistre dans la bdd 
 exports.signUp = (req, res, next) => {
@@ -23,12 +34,6 @@ exports.signUp = (req, res, next) => {
 };
 
 
-/// simule délai de 2s 
-const delay = (min, max) => {
-    const randomMs = Math.random() * (max - min) + min;
-    return new Promise(resolve => setTimeout(resolve, randomMs));
-};
-
 exports.login = (req, res, next) => {
     console.log("email reçu : ", req.body.email);
     
@@ -38,7 +43,7 @@ exports.login = (req, res, next) => {
             if (!user) {
                 console.log("Utilisateur introuvable.");
 
-                // Applique un délai de 2 secondes avant de renvoyer l'erreur
+                // Applique un délai avant de renvoyer l'erreur
                 delay(1500, 2000)
                     .then(() => {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
@@ -71,7 +76,7 @@ exports.login = (req, res, next) => {
                         userId: user._id,
                         token: jwt.sign(
                             { userId: user._id },
-                            "Pix08-45-Boulbi-94boulga",
+                            process.env.JWT_SECRET,
                             { expiresIn: "24h" }
                         )
                     });
