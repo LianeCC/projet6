@@ -6,8 +6,9 @@ const sharp = require("sharp");
 // Fonction gestion des images avec méthode Sharp
 const processImage = (file) => {
   return new Promise((resolve, reject) => {
-    const filenameBase = file.filename.split('.')[0];
-    const outputFilename = `${filenameBase}.webp`;
+    // Utilisation du nom de base original sans transformation
+    const filenameBase = file.originalname.split('.')[0]; 
+    const outputFilename = filenameBase.split('').join('_') + Date.now() + ".webp"; // Transformation seulement sur le fichier .webp
     const outputFilePath = path.join("images", outputFilename);
 
     sharp(file.path)
@@ -18,23 +19,12 @@ const processImage = (file) => {
       .webp({ quality: 80 })
       .toFile(outputFilePath)
       .then(() => {
-
-        // Retentez plusieurs fois la suppression
-        const retryDelete = (filePath, attempts = 5) => {
-          if (attempts === 0) {
-            console.error("Impossible de supprimer le fichier après plusieurs tentatives :", filePath);
-            return resolve(outputFilename);
+        fs.unlink(file.path, (err) => {
+          if (err) {
+            console.error("Erreur lors de la suppression du fichier original:", err);
           }
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              console.warn(`Échec de suppression (${attempts} restantes):`, err);
-              setTimeout(() => retryDelete(filePath, attempts - 1), 200); // Attente avant la nouvelle tentative
-            } else {
-              resolve(outputFilename);
-            }
-          });
-        };
-        retryDelete(file.path);
+          resolve(outputFilename); 
+        });
       })
       .catch((error) => {
         reject(error);
@@ -65,7 +55,7 @@ exports.createBook = (req, res, next) => {
             });
         })
         .catch((error) => {
-          res.status(400).json({ error: "Erreur lors du traitement de l'image" });
+          res.status(500).json({ error: "Erreur lors du traitement de l'image." });
         });
     } else {
       res.status(400).json({ error: "Aucune image fournie !" });
@@ -85,23 +75,25 @@ exports.getBook = (req, res, next) => {
 
 exports.updateBook = (req, res, next) => {
   const bookObject = req.file ? {
-    ...JSON.parse(req.body.book)} 
-    : {...req.body }; // si image founie, données converties en objet et ajoutées à bookObject - si 0 image, req.body directement utilisé comme bookObject
+    ...JSON.parse(req.body.book)
+  } : {...req.body }; // Si une image est fournie, les données sont converties en objet, sinon req.body est utilisé
 
-  delete bookObject._userId; //sécurité - suppression de l'id venant de la req pour éviter de le réutiliser pr un autre livre
+  delete bookObject._userId; // Sécurisation - suppression de l'ID venant de la req pour éviter de l'utiliser pour un autre livre
   
-  Book.findOne({_id: req.params.id})
+  Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message : "Non autorisé" });
-      } //verifie si livre appartient à l'user
-        
-      if (req.file) {  //cas si nouvelle image fournie
-        processImage(req.file)
-          .then((filename) => { // on supprime l'ancienne image si elle existe
+        return res.status(401).json({ message: "Non autorisé" });
+      } // Vérifie si le livre appartient à l'utilisateur
+
+      if (req.file) {  // Si une nouvelle image est fournie
+        processImage(req.file) 
+          .then((filename) => {
             const newImageUrl = `${req.protocol}://${req.get("host")}/images/${filename}`;
+
+            // Suppression de l'ancienne image si elle existe
             if (book.imageUrl) {
-              const oldFilename = book.imageUrl.split("/images/")[1];
+              const oldFilename = book.imageUrl.split("/images/")[1]; // Extraire le nom du fichier de l'ancienne image
               fs.unlink(`images/${oldFilename}`, (err) => {
                 if (err) {
                   console.error("Erreur lors de la suppression de l'ancienne image :", err);
@@ -110,23 +102,26 @@ exports.updateBook = (req, res, next) => {
                 }
               });
             }
-            return Book.updateOne( // données remplacées par celles de bookObject
+
+            // Mise à jour du livre avec la nouvelle image
+            return Book.updateOne(
               { _id: req.params.id },
               { ...bookObject, imageUrl: newImageUrl, _id: req.params.id }
             )
               .then(() => res.status(200).json({ message: "Livre modifié !" }))
               .catch((error) => res.status(401).json({ error }));
-            });
-      } else { // cas si aucune image fournie, uniquement les données 
-          Book.updateOne(
-            { _id: req.params.id },
-            { ...bookObject, _id: req.params.id }
-          )
-            .then(() => res.status(200).json({ message: "Livre modifié !" }))
-            .catch((error) => res.status(401).json({ error })); // non autorisé
+          })
+          .catch((error) => res.status(500).json({ error: "Erreur lors du traitement de l'image." }));
+      } else { // Si aucune image n'est fournie, on met à jour uniquement les données
+        Book.updateOne(
+          { _id: req.params.id },
+          { ...bookObject, _id: req.params.id }
+        )
+          .then(() => res.status(200).json({ message: "Livre modifié !" }))
+          .catch((error) => res.status(401).json({ error }));
       }
     })
-    .catch((error) => res.status(400).json({ error })); // erreur requete lors de la recherche du livre
+    .catch((error) => res.status(400).json({ error }));
 };
   
 
