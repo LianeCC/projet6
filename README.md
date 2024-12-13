@@ -24,6 +24,12 @@
    Cela lance le serveur backend et le frontend en mode développement.
 
 
+## Précautions 
+
+Lors de la création d'un livre et de sa modification, si l'image téléchargée est au format jpg ou jpeg, le fichier originel sera pas supprimé. Il faudra supprimer manuellement tous les fichiers .jpg ou .jpeg du dossier backend/images.
+Pas d'erreur pour les images au format .png
+
+
 ## Exemples de tests fonctionnels (Postman)
 
 1. **POST /api/auth/signup** : Inscription d'un utilisateur  
