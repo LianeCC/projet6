@@ -1,6 +1,17 @@
-import axios from 'axios';
+import axios from 'axios'; 
 import { API_ROUTES } from '../utils/constants';
 
+// Définir l'URL de base pour l'API
+const API_BASE_URL = 'https://projet6-d35d.onrender.com';
+
+// Mettre à jour les routes API
+export const API_ROUTES = {
+  BOOKS: `${API_BASE_URL}/books`,
+  BEST_RATED: `${API_BASE_URL}/best-rated`,
+  // autres routes ici
+};
+
+// Fonction pour formater les livres
 function formatBooks(bookArray) {
   return bookArray.map((book) => {
     const newBook = { ...book };
@@ -10,15 +21,18 @@ function formatBooks(bookArray) {
   });
 }
 
+// Stocker les informations d'utilisateur dans le localStorage
 export function storeInLocalStorage(token, userId) {
   localStorage.setItem('token', token);
   localStorage.setItem('userId', userId);
 }
 
+// Récupérer une valeur depuis le localStorage
 export function getFromLocalStorage(item) {
   return localStorage.getItem(item);
 }
 
+// Récupérer l'utilisateur authentifié
 export async function getAuthenticatedUser() {
   const defaultReturnObject = { authenticated: false, user: null };
   try {
@@ -34,13 +48,13 @@ export async function getAuthenticatedUser() {
   }
 }
 
+// Récupérer la liste des livres
 export async function getBooks() {
   try {
     const response = await axios({
       method: 'GET',
       url: `${API_ROUTES.BOOKS}`,
     });
-    // eslint-disable-next-line array-callback-return
     const books = formatBooks(response.data);
     return books;
   } catch (err) {
@@ -49,6 +63,7 @@ export async function getBooks() {
   }
 }
 
+// Récupérer un livre par son ID
 export async function getBook(id) {
   try {
     const response = await axios({
@@ -65,6 +80,7 @@ export async function getBook(id) {
   }
 }
 
+// Récupérer les livres les mieux notés
 export async function getBestRatedBooks() {
   try {
     const response = await axios({
@@ -77,6 +93,8 @@ export async function getBestRatedBooks() {
     return [];
   }
 }
+
+// Supprimer un livre
 export async function deleteBook(id) {
   try {
     await axios.delete(`${API_ROUTES.BOOKS}/${id}`, {
@@ -91,6 +109,7 @@ export async function deleteBook(id) {
   }
 }
 
+// Ajouter une note à un livre
 export async function rateBook(id, userId, rating) {
   const data = {
     userId,
@@ -113,6 +132,7 @@ export async function rateBook(id, userId, rating) {
   }
 }
 
+// Ajouter un livre
 export async function addBook(data) {
   const userId = localStorage.getItem('userId');
   const book = {
@@ -146,6 +166,7 @@ export async function addBook(data) {
   }
 }
 
+// Mettre à jour un livre
 export async function updateBook(data, id) {
   const userId = localStorage.getItem('userId');
 
@@ -157,7 +178,6 @@ export async function updateBook(data, id) {
     year: data.year,
     genre: data.genre,
   };
-  console.log(data.file[0]);
   if (data.file[0]) {
     newData = new FormData();
     newData.append('book', JSON.stringify(book));
