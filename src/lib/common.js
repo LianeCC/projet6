@@ -1,13 +1,13 @@
-import axios from 'axios'; 
-import { API_ROUTES } from '../utils/constants';
+import axios from 'axios';
 
-// Définir l'URL de base pour l'API
-const API_BASE_URL = 'https://projet6-d35d.onrender.com';
+// URL de l'API : backend local pour développement ou backend déployé pour production
+const API_URL = process.env.NODE_ENV === 'development'
+  ? 'http://localhost:4000'
+  : 'https://projet6-d35d.onrender.com';
 
-// Mettre à jour les routes API
 export const API_ROUTES = {
-  BOOKS: `${API_BASE_URL}/books`,
-  BEST_RATED: `${API_BASE_URL}/best-rated`,
+  BOOKS: `${API_URL}/api/books`,
+  BEST_RATED: `${API_URL}/api/books/bestrating`,
   // autres routes ici
 };
 
